@@ -106,7 +106,7 @@ class AutoEncoder(nn.Module):
         mu = self.fc_mu(hidden)
         logvar = self.fc_logvar(hidden)
         # Latent encoding is a normal distribution
-        return torch.cat(mu, logvar)
+        return torch.cat((mu, logvar), axis=1)
 
 
 def vae_loss(reconstructed_x, x, mu, logvar, beta = 1.0):
@@ -152,7 +152,7 @@ for i in range(N_Epochs):
 
 model.train(False)
 torch.save(model.state_dict(), "./weights.bin")
-reconstructedImages = model(torch.from_numpy(testImages.astype('float32') / 255).to(device)).cpu().detach().numpy()
+reconstructedImages = model(torch.from_numpy(testImages.astype('float32') / 255).to(device))[0].cpu().detach().numpy()
 autoEncodedTrainImages = model.encode(torch.from_numpy(trainImages.astype('float32') / 255).to(device).permute([0, 3, 2, 1])).cpu().detach().numpy()
 autoEncodedTestImages = model.encode(torch.from_numpy(testImages.astype('float32') / 255).to(device).permute([0, 3, 2, 1])).cpu().detach().numpy()
 actualLabels = dataset['test_labels']
@@ -196,14 +196,12 @@ plt.show()
 
 tsne = TSNE(2)
 autoEncoder2d = tsne.fit_transform(autoEncodedTestImages)
-pca2d = tsne.fit_transform(pcaEncodedTest)
 f, axarr = plt.subplots(1,2, figsize=(25, 20))
 for i in range(8):
     autoIndices = np.argwhere(kMeansAutoPredictions == i)
     trueIndices = np.argwhere(actualLabels == i)
-    pcaIndices = np.argwhere(kMeansPCAPredictions == i)
-    axarr[0][0].scatter(autoEncoder2d[autoIndices, 0], autoEncoder2d[autoIndices, 1], label=f"Autoencoder Label: {i}")
-    axarr[0][1].scatter(autoEncoder2d[trueIndices, 0], autoEncoder2d[trueIndices, 1], label=f"Autoencoder True Label: {i}")
-axarr[0][0].legend()
-axarr[0][1].legend()
+    axarr[0].scatter(autoEncoder2d[autoIndices, 0], autoEncoder2d[autoIndices, 1], label=f"Autoencoder Label: {i}")
+    axarr[1].scatter(autoEncoder2d[trueIndices, 0], autoEncoder2d[trueIndices, 1], label=f"Autoencoder True Label: {i}")
+axarr[0].legend()
+axarr[1].legend()
 plt.show()
